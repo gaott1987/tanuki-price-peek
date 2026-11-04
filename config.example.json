@@ -1,0 +1,19 @@
+{
+  "email": {
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 465,
+    "use_ssl": true,
+    "smtp_user": "your_email@gmail.com",
+    "smtp_password": "YOUR_GMAIL_APP_PASSWORD",
+    "from_addr": "your_email@gmail.com",
+    "to_addrs": ["your_email@gmail.com"]
+  },
+  "products": [
+    {
+      "name": "あつまれ どうぶつの森",
+      "url": "https://store-jp.nintendo.com/item/software/D70010000027618",
+      "target_price": 5000,
+      "skus": ["70010000027618", "HAC_P_ACBAA_JPN"]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+config.json
+*.db
+.venv/
+__pycache__/
+page*.html

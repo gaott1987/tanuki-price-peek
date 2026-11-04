@@ -1,0 +1,2 @@
+# Python deps. Install browser binary separately: python -m playwright install chromium
+playwright>=1.40
