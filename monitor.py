@@ -74,7 +74,15 @@ def save_record(conn, sku, price, availability):
 def fetch_product(url, target_skus):
     """返回 {sku: {name, price, availability}}。页面级失败抛异常；SKU 缺失则不在返回字典中。"""
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=HEADLESS)
+        browser = p.chromium.launch(
+            headless=HEADLESS,
+            args=[
+                "--disable-gpu",
+                "--disable-dev-shm-usage",
+                "--disable-images",
+                "--js-flags=--max-old-space-size=256"
+            ]
+        )
         page = browser.new_page()
         page.goto(url, wait_until="domcontentloaded", timeout=60000)
         page.wait_for_url("**/item/software/**", timeout=120000)

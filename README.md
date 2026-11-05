@@ -23,7 +23,7 @@
 ## Quick Start
 
 ```bash
-git clone <仓库地址>
+git clone https://github.com/gaott1987/tanuki-price-peek.git
 cd tanuki-price-peek
 
 python -m venv .venv
@@ -34,6 +34,9 @@ source .venv/bin/activate
 
 python -m pip install -r requirements.txt
 python -m playwright install chromium
+
+# Linux 用户注意：需要额外安装 Chromium 的系统依赖，否则会报缺少 libatk 等错误
+# sudo .venv/bin/playwright install-deps chromium
 
 # 按 config.example.json 新建 config.json，填入邮箱和商品
 cp config.example.json config.json
@@ -65,6 +68,54 @@ config.json 含邮箱/账号密码，不要提交到 Git（已在 .gitignore 中
 - 缺货：提醒一次；恢复有货：再提醒一次。
 - 某个 SKU 在页面中消失：提醒一次，之后不重复。
 - 每次运行、每个 SKU 都会记录价格和库存，无论是否发提醒。
+
+## 低内存环境部署建议（如 GCP e2-micro）
+Chromium 对内存消耗较大。如果你也打算将其部署在 1GB 内存左右的轻量服务器（如 GCP e2-micro）上，可以参考我实际测试过的措施防止 OOM（内存溢出）导致任务失败：
+
+1. 配置 Swap 安全网：创建 1GB 的 Swap 文件，并设置 vm.swappiness=10。
+
+2. 代码已内置低内存参数：monitor.py 启动 Chromium 时已默认添加了 --disable-gpu、--disable-dev-shm-usage、--disable-images 和限制 V8 内存的参数。这能大幅降低内存占用并节省出站流量。
+
+3. 执行时间：建议将定时任务设置在凌晨时段，此时服务器负载较低，且任天堂通常在此时段更新当日折扣。
+
+## 定时运行（Linux systemd 示例）
+在无头服务器上，推荐使用 systemd timer，以便获得更好的日志记录和失败补跑能力。
+
+1. 创建 /etc/systemd/system/tanuki-monitor.service：
+```ini
+[Unit]
+Description=Tanuki Price Peek Daily Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=你的用户名
+WorkingDirectory=/home/你的用户名/tanuki-price-peek
+ExecStart=/home/你的用户名/tanuki-price-peek/.venv/bin/python /home/你的用户名/tanuki-price-peek/monitor.py
+TimeoutStartSec=600
+```
+
+2. 创建 /etc/systemd/system/tanuki-monitor.timer：
+```ini
+[Unit]
+Description=Run Tanuki Price Peek daily at 3:00 JST
+
+[Timer]
+# 注意将时间转换为你服务器所在的时区 (例如 UTC 的 18:00 对应 JST 的 03:00)
+OnCalendar=*-*-* 18:00:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target
+```
+
+3. 启用并启动：
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now tanuki-monitor.timer
+```
 
 ## 注意事项
 - 任天堂商店使用 Queue-it 排队。脚本以无头模式（HEADLESS = True）运行，已在 Windows 上验证可以穿过排队；迁移到其他环境时如果被排队页拦截，可临时改为 HEADLESS = False 观察页面状态。
